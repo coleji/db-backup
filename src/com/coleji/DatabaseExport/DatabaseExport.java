@@ -6,6 +6,7 @@ import java.sql.ResultSetMetaData;
 
 import com.coleji.Database.OracleConnectionManager;
 
+
 public class DatabaseExport {
 	public static void main(String[] args) {
 		try {
