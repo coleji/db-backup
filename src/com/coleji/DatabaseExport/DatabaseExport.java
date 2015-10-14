@@ -3,7 +3,11 @@ package com.coleji.DatabaseExport;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -50,7 +54,10 @@ public class DatabaseExport {
 		HashMap<Integer,Boolean> writeIndexToMainFile = new HashMap<Integer,Boolean>();
 		
 		f = new File (directory + "/" + table + ".columns");
-		if (!f.exists()) f.createNewFile();
+		if (f.exists()) {
+			throw new Exception();
+		}
+		f.createNewFile();
 		bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f),"utf-8"));
 		bw.write("EXPORTER_ID" + FIELD_DELIMITER);
 		
@@ -73,21 +80,64 @@ public class DatabaseExport {
 		System.out.println("\tDone with columns");
 		
 		f = new File (directory + "/" + table + ".data");
-		if (!f.exists()) f.createNewFile();
+		if (f.exists()) {
+			throw new Exception();
+		}
+		f.createNewFile();
 		bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f),"utf-8"));
 		
 		int rowCounter = 1;
 		while (rs.next()) {
 			System.out.println("\ttable : " +table + ", WRiting row " + rowCounter);
-			bw.write("" + rowCounter++ + FIELD_DELIMITER);
+			bw.write("" + rowCounter + FIELD_DELIMITER);
 			for (int i=0; i<columnCount; i++) {
 				if (writeIndexToMainFile.get(i+1)) {
 					bw.write(rs.getString(i+1) + FIELD_DELIMITER);
+				} else if (rsmd.getColumnType(i+1) == COLUMN_TYPE_ORACLE_CLOB) {
+					Clob clob = rs.getClob(i+1);
+					if (clob == null) {
+						continue;
+					}
+					File lobFile = new File (directory + "/" + table + "-" + rsmd.getColumnName(i+1) + "-" + rowCounter);
+					if (lobFile.exists()) {
+						bw.close();
+						throw new Exception();
+					}
+					lobFile.createNewFile();
+					FileOutputStream fos = new FileOutputStream(lobFile);
+					System.out.println("" + clob.length());
+					Reader r = clob.getCharacterStream();
+					int b;
+					while ((b = r.read()) != -1) {
+						fos.write(b);
+					}
+					fos.close();
+				} else if (rsmd.getColumnType(i+1) == COLUMN_TYPE_ORACLE_BLOB) {
+					Blob blob = rs.getBlob(i + 1);
+					if (blob == null) {
+						continue;
+					}
+					File lobFile = new File (directory + "/" + table + "-" + rsmd.getColumnName(i+1) + "-" + rowCounter);
+					if (lobFile.exists()) {
+						bw.close();
+						throw new Exception();
+					}
+					lobFile.createNewFile();
+					FileOutputStream fos = new FileOutputStream(lobFile);
+					InputStream is = blob.getBinaryStream();
+					int b;
+					while ((b = is.read()) != -1) {
+						fos.write(b);
+					}
+					fos.close();
 				} else {
-					// write blob/clob data
+					// should not get here
+					bw.close();
+					throw new Exception();
 				}
 			}
 			bw.write(LINE_DELIMITER);
+			rowCounter++;
 		}
 		bw.close();
 	}
@@ -102,7 +152,7 @@ public class DatabaseExport {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
 			}
 			for (String table : tables) {
-			//	if (!table.equals("EXPORT_TEST")) continue;
+		//		if (!table.equals("EXPORT_TEST")) continue;
 				System.out.println("TABLE: " + table);
 				exportLiveToFile(writeToDirectory, c, table);
 			}
