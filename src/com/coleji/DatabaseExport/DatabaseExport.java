@@ -13,6 +13,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.coleji.Database.OracleConnectionManager;
 import com.coleji.Database.QueryWrapper;
@@ -23,6 +25,7 @@ public class DatabaseExport {
 	
 	private static final char FIELD_DELIMITER = '\t';
 	private static final char LINE_DELIMITER = '\n';
+	private static final char FILE_NAME_SEPARATOR = ' ';
 
 	private static final int COLUMN_TYPE_ORACLE_NUMBER = java.sql.Types.NUMERIC;
 	private static final int COLUMN_TYPE_ORACLE_VARCHAR2 = java.sql.Types.VARCHAR;
@@ -30,6 +33,10 @@ public class DatabaseExport {
 	private static final int COLUMN_TYPE_ORACLE_DATE = java.sql.Types.TIMESTAMP;
 	private static final int COLUMN_TYPE_ORACLE_CLOB = java.sql.Types.CLOB;
 	private static final int COLUMN_TYPE_ORACLE_BLOB = java.sql.Types.BLOB;
+	
+	private static final Pattern DATA_FILE_REGEX = Pattern.compile("^(.+)\\.data$");
+	private static final Pattern COLUMN_FILE_REGEX = Pattern.compile("^(.+)\\.columns$");
+	private static final Pattern BLOB_CLOB_FILE_REGEX = Pattern.compile("^(.+) (.+) ([0-9]+)$");
 	
 	private static final HashMap<Integer, Boolean> TYPES_FOR_MAIN_FILE;
 	
@@ -41,6 +48,40 @@ public class DatabaseExport {
 		TYPES_FOR_MAIN_FILE.put(COLUMN_TYPE_ORACLE_DATE, true);
 		TYPES_FOR_MAIN_FILE.put(COLUMN_TYPE_ORACLE_CLOB, false);
 		TYPES_FOR_MAIN_FILE.put(COLUMN_TYPE_ORACLE_BLOB, false);
+	}
+	
+	private DatabaseExport() {
+		// can't be instantiated
+	}
+	
+	private static void loadFilesToDatabase(String directory, Connection c) throws Exception {
+		HashMap<String, TableConstructor> tablesHash = new HashMap<String, TableConstructor>();
+		File directoryFile = new File(directory);
+		if (!directoryFile.exists() || !directoryFile.isDirectory()) throw new Exception();
+		
+		for (File file : directoryFile.listFiles()) {
+			String fileName = file.getName();
+			Matcher m;
+			if ((m = DATA_FILE_REGEX.matcher(fileName)).matches()) {
+				String tableName = m.group(1);
+				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor());
+				tablesHash.get(tableName).putDataFile(file);
+			} else if ((m = COLUMN_FILE_REGEX.matcher(fileName)).matches()) {
+				String tableName = m.group(1);
+				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor());
+				tablesHash.get(tableName).putColumnsFile(file);
+			} else if ((m = BLOB_CLOB_FILE_REGEX.matcher(fileName)).matches()) {
+				String tableName = m.group(1);
+				String columnName = m.group(2);
+				Integer rowID = new Integer(m.group(3));
+				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor());
+				tablesHash.get(tableName).pushBlobFile(columnName, rowID, file);
+			} else {
+				// unrecognized file
+				throw new Exception(fileName);
+			}
+		}
+		// validate all TableConstructors
 	}
 	
 	private static void exportLiveToFile(String directory, Connection c, String table) throws Exception {
@@ -98,7 +139,7 @@ public class DatabaseExport {
 					if (clob == null) {
 						continue;
 					}
-					File lobFile = new File (directory + "/" + table + "-" + rsmd.getColumnName(i+1) + "-" + rowCounter);
+					File lobFile = new File (directory + "/" + table + FILE_NAME_SEPARATOR + rsmd.getColumnName(i+1) + FILE_NAME_SEPARATOR + rowCounter);
 					if (lobFile.exists()) {
 						bw.close();
 						throw new Exception();
@@ -117,7 +158,7 @@ public class DatabaseExport {
 					if (blob == null) {
 						continue;
 					}
-					File lobFile = new File (directory + "/" + table + "-" + rsmd.getColumnName(i+1) + "-" + rowCounter);
+					File lobFile = new File (directory + "/" + table + FILE_NAME_SEPARATOR + rsmd.getColumnName(i+1) + FILE_NAME_SEPARATOR + rowCounter);
 					if (lobFile.exists()) {
 						bw.close();
 						throw new Exception();
@@ -143,19 +184,25 @@ public class DatabaseExport {
 	}
 	
 	public static void main(String[] args) {
+	//	System.out.println(Pattern.compile("^(.)+ (.)+ [0-9]+$").matcher("d g 12").matches());
+		
 		try {
 			String writeToDirectory = "/home/jcole/export-test";
 			Connection c = new OracleConnectionManager("/home/jcole/property-files/CBI_QA").getConnection();
+			
 			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_QA", null, new String[] {"TABLE"});
 			ArrayList<String> tables = new ArrayList<String>();
 			while (tablesRS.next()) {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
 			}
 			for (String table : tables) {
-		//		if (!table.equals("EXPORT_TEST")) continue;
+				if (!table.equals("EXPORT_TEST")) continue;
 				System.out.println("TABLE: " + table);
 				exportLiveToFile(writeToDirectory, c, table);
 			}
+
+			loadFilesToDatabase(writeToDirectory, c);
+			
 			c.close();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
