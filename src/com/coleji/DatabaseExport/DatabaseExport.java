@@ -70,6 +70,7 @@ public class DatabaseExport {
 			}
 		}
 		bw.close();
+		System.out.println("\tDone with columns");
 		
 		f = new File (directory + "/" + table + ".data");
 		if (!f.exists()) f.createNewFile();
@@ -77,6 +78,7 @@ public class DatabaseExport {
 		
 		int rowCounter = 1;
 		while (rs.next()) {
+			System.out.println("\ttable : " +table + ", WRiting row " + rowCounter);
 			bw.write("" + rowCounter++ + FIELD_DELIMITER);
 			for (int i=0; i<columnCount; i++) {
 				if (writeIndexToMainFile.get(i+1)) {
@@ -100,8 +102,8 @@ public class DatabaseExport {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
 			}
 			for (String table : tables) {
-				if (!table.equals("EXPORT_TEST")) continue;
-				
+			//	if (!table.equals("EXPORT_TEST")) continue;
+				System.out.println("TABLE: " + table);
 				exportLiveToFile(writeToDirectory, c, table);
 			}
 			c.close();
