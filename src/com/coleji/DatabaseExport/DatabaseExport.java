@@ -18,6 +18,8 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
+
 import com.coleji.Database.OracleConnectionManager;
 import com.coleji.Database.QueryWrapper;
 
@@ -157,13 +159,12 @@ public class DatabaseExport {
 					lobFile.createNewFile();
 					FileOutputStream fos = new FileOutputStream(lobFile);
 					System.out.println("" + clob.length());
-					Reader r = clob.getCharacterStream();
-					int b;
-					while ((b = r.read()) != -1) {
+					byte[] bs = IOUtils.toByteArray(clob.getCharacterStream(), "UTF-8");
+					for (byte b : bs) {
 						fos.write(b);
 					}
 					fos.close();
-				} else if (rsmd.getColumnType(i+1) == COLUMN_TYPE_ORACLE_BLOB) {
+				} else if (rsmd.getColumnType(i+1) == COLUMN_TYPE_ORACLE_BLOB || rsmd.getColumnType(i+1) == COLUMN_TYPE_ORACLE_CLOB) {
 					Blob blob = rs.getBlob(i + 1);
 					if (blob == null) {
 						continue;

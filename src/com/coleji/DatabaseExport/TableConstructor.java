@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
@@ -217,10 +218,11 @@ public class TableConstructor {
 						ps.executeUpdate();
 						fis.close();
 					} else if (columnType == DatabaseExport.COLUMN_TYPE_ORACLE_CLOB) {
-						FileReader fr = new FileReader(e.getValue());
-						ps.setCharacterStream(1, fr, (int)e.getValue().length());
+					//	FileReader fr = new FileReader(e.getValue(),"utf-8");
+						InputStreamReader ir = new InputStreamReader(new FileInputStream(e.getValue()),"utf-8");
+						ps.setCharacterStream(1, ir, (int)e.getValue().length());
 						ps.executeUpdate();
-						fr.close();
+						ir.close();
 					}
 				}
 			}
