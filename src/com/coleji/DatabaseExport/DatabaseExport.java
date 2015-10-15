@@ -13,6 +13,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,8 +25,8 @@ import com.coleji.Database.QueryWrapper;
 public class DatabaseExport {
 	private static final int TABLE_NAME_COLUMN = 3;
 	
-	private static final char FIELD_DELIMITER = '\t';
-	private static final char LINE_DELIMITER = '\n';
+	protected static final char FIELD_DELIMITER = '\t';
+	protected static final char LINE_DELIMITER = '\n';
 	private static final char FILE_NAME_SEPARATOR = ' ';
 
 	private static final int COLUMN_TYPE_ORACLE_NUMBER = java.sql.Types.NUMERIC;
@@ -81,7 +83,11 @@ public class DatabaseExport {
 				throw new Exception(fileName);
 			}
 		}
-		// validate all TableConstructors
+		Iterator<Entry<String, TableConstructor>> it = tablesHash.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, TableConstructor> e = it.next();
+			e.getValue().validate();
+		}
 	}
 	
 	private static void exportLiveToFile(String directory, Connection c, String table) throws Exception {
