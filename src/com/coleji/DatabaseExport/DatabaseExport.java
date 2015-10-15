@@ -66,17 +66,17 @@ public class DatabaseExport {
 			Matcher m;
 			if ((m = DATA_FILE_REGEX.matcher(fileName)).matches()) {
 				String tableName = m.group(1);
-				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor());
+				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor(tableName));
 				tablesHash.get(tableName).putDataFile(file);
 			} else if ((m = COLUMN_FILE_REGEX.matcher(fileName)).matches()) {
 				String tableName = m.group(1);
-				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor());
+				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor(tableName));
 				tablesHash.get(tableName).putColumnsFile(file);
 			} else if ((m = BLOB_CLOB_FILE_REGEX.matcher(fileName)).matches()) {
 				String tableName = m.group(1);
 				String columnName = m.group(2);
 				Integer rowID = new Integer(m.group(3));
-				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor());
+				if (!tablesHash.containsKey(tableName)) tablesHash.put(tableName,new TableConstructor(tableName));
 				tablesHash.get(tableName).pushBlobFile(columnName, rowID, file);
 			} else {
 				// unrecognized file
@@ -86,7 +86,15 @@ public class DatabaseExport {
 		Iterator<Entry<String, TableConstructor>> it = tablesHash.entrySet().iterator();
 		while (it.hasNext()) {
 			Entry<String, TableConstructor> e = it.next();
+			System.out.println("validating " + e.getKey());
 			e.getValue().validate();
+		}
+		
+		it = tablesHash.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, TableConstructor> e = it.next();
+			System.out.println("constructing " + e.getKey());
+			e.getValue().construct(c);
 		}
 	}
 	

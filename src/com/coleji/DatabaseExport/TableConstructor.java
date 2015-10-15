@@ -2,17 +2,20 @@ package com.coleji.DatabaseExport;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.sql.Connection;
 import java.util.HashMap;
 
+import com.coleji.Database.QueryWrapper;
+
 public class TableConstructor {
+	private String tableName;
 	private File dataFile, columnsFile;
 	private HashMap<String,HashMap<Integer,File>> blobFiles;
 	private String[] columnNames;
 	
-	protected TableConstructor() {
+	protected TableConstructor(String tableName) {
+		this.tableName = tableName;
 		this.dataFile = null;
 		this.columnsFile = null;
 		this.blobFiles = new HashMap<String,HashMap<Integer,File>>();
@@ -63,6 +66,38 @@ public class TableConstructor {
 		br = new BufferedReader(new FileReader(this.dataFile));
 		while ((line = br.readLine()) != null) {
 			String[] values = line.split((new Character(DatabaseExport.FIELD_DELIMITER)).toString());
+			if (values.length != columnCount) {
+				br.close();
+				throw new Exception();
+			}
 		}
+		// TODO: take connection and validate that the columns are right?
+	}
+	
+	protected void construct(Connection c) throws Exception {
+		QueryWrapper qw;
+		String line;
+		BufferedReader br = new BufferedReader(new FileReader(this.dataFile));
+		String delimiter = "";
+		while ((line = br.readLine()) != null) {
+			String[] values = line.split((new Character(DatabaseExport.FIELD_DELIMITER)).toString());
+			qw = new QueryWrapper();
+			qw.add("INSERT INTO " + this.tableName + "_2 (");
+			for (String column : this.columnNames) {
+				qw.add(delimiter + column);
+				delimiter = ", ";
+			}
+			delimiter = "";
+			qw.add(") VALUES (");
+			// FIXME: switch on column type, add quotes for strings, to_date() for dates etc
+			for (String value : values) {
+				qw.add(delimiter + value);
+				delimiter = ", ";
+			}
+			qw.add(")");
+			System.out.println(qw.toString());
+			qw.runUpdateOrDelete(c);
+		}
+		br.close();
 	}
 }
