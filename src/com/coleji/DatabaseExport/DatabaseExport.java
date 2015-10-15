@@ -29,12 +29,12 @@ public class DatabaseExport {
 	protected static final char LINE_DELIMITER = '\n';
 	private static final char FILE_NAME_SEPARATOR = ' ';
 
-	private static final int COLUMN_TYPE_ORACLE_NUMBER = java.sql.Types.NUMERIC;
-	private static final int COLUMN_TYPE_ORACLE_VARCHAR2 = java.sql.Types.VARCHAR;
-	private static final int COLUMN_TYPE_ORACLE_CHAR = java.sql.Types.CHAR;
-	private static final int COLUMN_TYPE_ORACLE_DATE = java.sql.Types.TIMESTAMP;
-	private static final int COLUMN_TYPE_ORACLE_CLOB = java.sql.Types.CLOB;
-	private static final int COLUMN_TYPE_ORACLE_BLOB = java.sql.Types.BLOB;
+	public static final int COLUMN_TYPE_ORACLE_NUMBER = java.sql.Types.NUMERIC;
+	public static final int COLUMN_TYPE_ORACLE_VARCHAR2 = java.sql.Types.VARCHAR;
+	public static final int COLUMN_TYPE_ORACLE_CHAR = java.sql.Types.CHAR;
+	public static final int COLUMN_TYPE_ORACLE_DATE = java.sql.Types.TIMESTAMP;
+	public static final int COLUMN_TYPE_ORACLE_CLOB = java.sql.Types.CLOB;
+	public static final int COLUMN_TYPE_ORACLE_BLOB = java.sql.Types.BLOB;
 	
 	private static final Pattern DATA_FILE_REGEX = Pattern.compile("^(.+)\\.data$");
 	private static final Pattern COLUMN_FILE_REGEX = Pattern.compile("^(.+)\\.columns$");
@@ -114,7 +114,7 @@ public class DatabaseExport {
 		}
 		f.createNewFile();
 		bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f),"utf-8"));
-		bw.write("EXPORTER_ID" + FIELD_DELIMITER);
+	//	bw.write("EXPORTER_ID" + FIELD_DELIMITER);
 		
 		for (int i=0; i<columnCount; i++) {
 			Integer columnType = rsmd.getColumnType(i+1);
@@ -124,12 +124,8 @@ public class DatabaseExport {
 				throw new Exception();
 			} 
 			
-			if (TYPES_FOR_MAIN_FILE.get(columnType)) {
-				writeIndexToMainFile.put((i+1), true);
-				bw.write(rsmd.getColumnName(i+1) + FIELD_DELIMITER);
-			} else {
-				writeIndexToMainFile.put((i+1), false);
-			}
+			writeIndexToMainFile.put((i+1), TYPES_FOR_MAIN_FILE.get(columnType));
+			bw.write(rsmd.getColumnName(i+1) + FIELD_DELIMITER + rsmd.getColumnType(i+1) + LINE_DELIMITER);
 		}
 		bw.close();
 		System.out.println("\tDone with columns");
@@ -210,12 +206,12 @@ public class DatabaseExport {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
 			}
 			for (String table : tables) {
-				if (!table.equals("EXPORT_TEST")) continue;
+				if (!table.equals("EXPORT_TEST_2")) continue;
 				System.out.println("TABLE: " + table);
 				exportLiveToFile(writeToDirectory, c, table);
 			}
 
-			loadFilesToDatabase(writeToDirectory, c);
+		//	loadFilesToDatabase(writeToDirectory, c);
 			
 			c.close();
 		} catch (Exception e) {
