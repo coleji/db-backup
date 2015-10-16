@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
@@ -43,6 +42,14 @@ public class DatabaseExport {
 	private static final Pattern BLOB_CLOB_FILE_REGEX = Pattern.compile("^(.+) (.+) ([0-9]+)$");
 	
 	private static final HashMap<Integer, Boolean> TYPES_FOR_MAIN_FILE;
+	
+	protected
+	static final CharSequence[][] ESCAPES = {
+		{"\\", "\\\\"}, // escape this one first, unescape last
+		{"\t", "\\t"},
+		{"\n", "\\n"},
+		{"\r", "\\r"}
+	}; 
 	
 	static {
 		TYPES_FOR_MAIN_FILE = new HashMap<Integer, Boolean>();
@@ -88,14 +95,14 @@ public class DatabaseExport {
 		Iterator<Entry<String, TableConstructor>> it = tablesHash.entrySet().iterator();
 		while (it.hasNext()) {
 			Entry<String, TableConstructor> e = it.next();
-			System.out.println("validating " + e.getKey());
+		//	System.out.println("validating " + e.getKey());
 			e.getValue().validate();
 		}
 		
 		it = tablesHash.entrySet().iterator();
 		while (it.hasNext()) {
 			Entry<String, TableConstructor> e = it.next();
-			System.out.println("constructing " + e.getKey());
+		//	System.out.println("constructing " + e.getKey());
 			e.getValue().construct(c);
 		}
 	}
@@ -130,7 +137,7 @@ public class DatabaseExport {
 			bw.write(rsmd.getColumnName(i+1) + FIELD_DELIMITER + rsmd.getColumnType(i+1) + LINE_DELIMITER);
 		}
 		bw.close();
-		System.out.println("\tDone with columns");
+	//	System.out.println("\tDone with columns");
 		
 		f = new File (directory + "/" + table + ".data");
 		if (f.exists()) {
@@ -141,11 +148,23 @@ public class DatabaseExport {
 		
 		int rowCounter = 1;
 		while (rs.next()) {
-			System.out.println("\ttable : " +table + ", WRiting row " + rowCounter);
+		//	System.out.println("\ttable : " +table + ", Writing row " + rowCounter);
 			bw.write("" + rowCounter + FIELD_DELIMITER);
 			for (int i=0; i<columnCount; i++) {
 				if (writeIndexToMainFile.get(i+1)) {
-					bw.write(rs.getString(i+1) + FIELD_DELIMITER);
+					String value = rs.getString(i+1);
+					if (rs.wasNull()) {
+						bw.write(FIELD_DELIMITER);
+					} else {
+						if (rsmd.getColumnType(i+1) == DatabaseExport.COLUMN_TYPE_ORACLE_CHAR || rsmd.getColumnType(i+1) == DatabaseExport.COLUMN_TYPE_ORACLE_VARCHAR2) {
+							for (int j=0; j<ESCAPES.length; j++) {
+								if (value == null) break;
+								CharSequence[] escape = ESCAPES[j];
+								value = value.replace(escape[0], escape[1]);
+							}
+						}
+						bw.write(value + FIELD_DELIMITER);
+					}
 				} else if (rsmd.getColumnType(i+1) == COLUMN_TYPE_ORACLE_CLOB) {
 					Clob clob = rs.getClob(i+1);
 					if (clob == null) {
@@ -158,7 +177,6 @@ public class DatabaseExport {
 					}
 					lobFile.createNewFile();
 					FileOutputStream fos = new FileOutputStream(lobFile);
-					System.out.println("" + clob.length());
 					byte[] bs = IOUtils.toByteArray(clob.getCharacterStream(), "UTF-8");
 					for (byte b : bs) {
 						fos.write(b);
@@ -195,24 +213,22 @@ public class DatabaseExport {
 	}
 	
 	public static void main(String[] args) {
-	//	System.out.println(Pattern.compile("^(.)+ (.)+ [0-9]+$").matcher("d g 12").matches());
-		
 		try {
-			String writeToDirectory = "/home/jcole/export-test";
+			String writeToDirectory = "/home/jcole/export-test/first";
 			Connection c = new OracleConnectionManager("/home/jcole/property-files/CBI_QA").getConnection();
-			
-			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_QA", null, new String[] {"TABLE"});
+			/*
+			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_DEV", null, new String[] {"TABLE"});
 			ArrayList<String> tables = new ArrayList<String>();
 			while (tablesRS.next()) {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
 			}
 			for (String table : tables) {
-				if (!table.equals("EXPORT_TEST_2")) continue;
-				System.out.println("TABLE: " + table);
+			//	if (!table.equals("EMAIL_CONTENT")) continue;
+			//	System.out.println("TABLE: " + table);
 				exportLiveToFile(writeToDirectory, c, table);
 			}
-
-		//	loadFilesToDatabase(writeToDirectory, c);
+*/
+			loadFilesToDatabase(writeToDirectory, c);
 			
 			c.close();
 		} catch (Exception e) {

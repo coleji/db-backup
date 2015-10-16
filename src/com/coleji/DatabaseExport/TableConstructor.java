@@ -103,10 +103,16 @@ public class TableConstructor {
 		// TODO: make sure there are no line endings in the data.  Escape newlines on file creation?
 		br = new BufferedReader(new FileReader(this.dataFile));
 		while ((line = br.readLine()) != null) {
+			line = line + "$";
+			// If the line ends in a bunch of empty fields, they will get trunc'd off when we split
+			// To prevent that from happening, 
 			String[] values = line.split((new Character(DatabaseExport.FIELD_DELIMITER)).toString());
-			if (values.length != columnCountInMainFile) {
+			if (values.length - 1 != columnCountInMainFile) {
 				br.close();
-				throw new Exception();
+	//			System.out.println("\"" + line + "\"");
+				throw new Exception("Found a row with " + (values.length - 1) + " columns when it should have had " + columnCountInMainFile);
+			} else {
+	//			System.out.println(values[values.length-1]);
 			}
 		}
 		// TODO: take connection and validate that the columns are right?
@@ -121,10 +127,11 @@ public class TableConstructor {
 		
 		// Read each data row, create an insert statement for non-blob fields, then one insert per blob
 		while ((line = br.readLine()) != null) {
+			line = line + "$";
 			String delimiter = "";
 			String[] values = line.split((new Character(DatabaseExport.FIELD_DELIMITER)).toString());
 			qw = new QueryWrapper();
-			qw.add("INSERT INTO " + this.tableName + "_2 (");
+			qw.add("INSERT INTO " + this.tableName + " (");
 			for (Column column : this.columns) {
 				switch(column.columnType) {
 				case DatabaseExport.COLUMN_TYPE_ORACLE_VARCHAR2:
@@ -145,30 +152,45 @@ public class TableConstructor {
 			delimiter = "";
 			qw.add(") VALUES (");
 			// FIXME: switch on column type, add quotes for strings, to_date() for dates etc
-			for (int i=1; i<values.length; i++) {
+			for (int i=1; i<values.length-1; i++) {
 				String value = values[i];
-				Column col = this.columns.get(dataFileColIndexToObjectColumnIndex.get(i));
-				switch(col.columnType) {
-				case DatabaseExport.COLUMN_TYPE_ORACLE_VARCHAR2:
-				case DatabaseExport.COLUMN_TYPE_ORACLE_CHAR:
-					qw.add(delimiter + "'" + value + "'");
-					break;
-				case DatabaseExport.COLUMN_TYPE_ORACLE_DATE:
-					qw.add(delimiter + "to_date('" + value.substring(0,value.length() - 2) + "','YYYY-MM-DD HH24:MI:SS')");
-					break;
-				case DatabaseExport.COLUMN_TYPE_ORACLE_NUMBER:
-					qw.add(delimiter + value);
-					break;
-				case DatabaseExport.COLUMN_TYPE_ORACLE_CLOB:
-				case DatabaseExport.COLUMN_TYPE_ORACLE_BLOB:
-					break;
-				default:
-					throw new Exception();
+				if (value == null || value.equals("")) {
+					qw.add(delimiter + "null");
+				} else {/*
+					System.out.println("\"" + value + "\"");
+					char[] cs = value.toCharArray();
+					for (char c1 : cs) {
+						System.out.print((int)c1 + ":");
+					}*/
+					Column col = this.columns.get(dataFileColIndexToObjectColumnIndex.get(i));
+					switch(col.columnType) {
+					case DatabaseExport.COLUMN_TYPE_ORACLE_VARCHAR2:
+					case DatabaseExport.COLUMN_TYPE_ORACLE_CHAR:
+						for (int j=DatabaseExport.ESCAPES.length; j>0; j--) {
+							CharSequence[] escape = DatabaseExport.ESCAPES[j-1];
+							value.replace(escape[1], escape[0]);
+						}
+						value = value.replace("'", "''");
+						qw.add(delimiter + "'" + value + "'");
+						break;
+					case DatabaseExport.COLUMN_TYPE_ORACLE_DATE:
+					//	System.out.println("\"" + value + "\"");
+						qw.add(delimiter + "to_date('" + value.substring(0,value.length() - 2) + "','YYYY-MM-DD HH24:MI:SS')");
+						break;
+					case DatabaseExport.COLUMN_TYPE_ORACLE_NUMBER:
+						qw.add(delimiter + value);
+						break;
+					case DatabaseExport.COLUMN_TYPE_ORACLE_CLOB:
+					case DatabaseExport.COLUMN_TYPE_ORACLE_BLOB:
+						break;
+					default:
+						throw new Exception();
+					}
 				}
 				delimiter = ", ";
 			}
 			qw.add(")");
-			System.out.println(qw.toString());
+	//		System.out.println(qw.toString());
 			qw.runUpdateOrDelete(c);
 			
 			Integer rowID = new Integer(values[0]);
@@ -181,47 +203,56 @@ public class TableConstructor {
 						if (column.columnName.equals(e.getKey())) {
 							columnType = column.columnType;
 							break;
-						} else {
-							System.out.println("apparently '" + column.columnName + "' does not equal '" + e.getKey() + "'");
 						}
 					}
 					StringBuilder s = new StringBuilder();
-					s.append("UPDATE " + this.tableName + "_2 SET " + e.getKey() + " = ? ");
+					s.append("UPDATE " + this.tableName + " SET " + e.getKey() + " = ? ");
 					delimiter = " WHERE ";
-					for (int i=1; i<values.length; i++) {
+					for (int i=1; i<values.length-1; i++) {
 						String value = values[i];
-						Column col = this.columns.get(i-1); // values[0] is the exporterID again
-						switch(col.columnType) {
-						case DatabaseExport.COLUMN_TYPE_ORACLE_VARCHAR2:
-						case DatabaseExport.COLUMN_TYPE_ORACLE_CHAR:
-							s.append(delimiter + col.columnName + " = '" + value + "'");
-							break;
-						case DatabaseExport.COLUMN_TYPE_ORACLE_DATE:
-							s.append(delimiter + col.columnName + " = to_date('" + value.substring(0,value.length() - 2) + "','YYYY-MM-DD HH24:MI:SS')");
-							break;
-						case DatabaseExport.COLUMN_TYPE_ORACLE_NUMBER:
-							s.append(delimiter + col.columnName + " = " + value);
-							break;
-						case DatabaseExport.COLUMN_TYPE_ORACLE_CLOB:
-						case DatabaseExport.COLUMN_TYPE_ORACLE_BLOB:
-							break;
-						default:
-							throw new Exception();
+						Column col = this.columns.get(dataFileColIndexToObjectColumnIndex.get(i));
+						if (value == null || value.equals("")) {
+							s.append(delimiter + col.columnName + " = null");
+						} else {
+							switch(col.columnType) {
+							case DatabaseExport.COLUMN_TYPE_ORACLE_VARCHAR2:
+							case DatabaseExport.COLUMN_TYPE_ORACLE_CHAR:
+								for (int j=DatabaseExport.ESCAPES.length; j>0; j--) {
+									CharSequence[] escape = DatabaseExport.ESCAPES[j-1];
+									value.replace(escape[1], escape[0]);
+								}
+								value = value.replace("'", "''");
+								s.append(delimiter + col.columnName + " = '" + value + "'");
+								break;
+							case DatabaseExport.COLUMN_TYPE_ORACLE_DATE:
+								s.append(delimiter + col.columnName + " = to_date('" + value.substring(0,value.length() - 2) + "','YYYY-MM-DD HH24:MI:SS')");
+								break;
+							case DatabaseExport.COLUMN_TYPE_ORACLE_NUMBER:
+								s.append(delimiter + col.columnName + " = " + value);
+								break;
+							case DatabaseExport.COLUMN_TYPE_ORACLE_CLOB:
+							case DatabaseExport.COLUMN_TYPE_ORACLE_BLOB:
+								break;
+							default:
+								throw new Exception();
+							}
 						}
 						delimiter = " AND ";
 					}
-					System.out.println(s.toString());
+		//			System.out.println(s.toString());
 					PreparedStatement ps = c.prepareStatement(s.toString());
 					if (columnType == DatabaseExport.COLUMN_TYPE_ORACLE_BLOB) {
 						FileInputStream fis = new FileInputStream(e.getValue());
 						ps.setBinaryStream(1, fis, (int)e.getValue().length());
-						ps.executeUpdate();
+						int rowsUpdated = ps.executeUpdate();
+						System.out.println(rowsUpdated + "  " + s.toString());
 						fis.close();
 					} else if (columnType == DatabaseExport.COLUMN_TYPE_ORACLE_CLOB) {
 					//	FileReader fr = new FileReader(e.getValue(),"utf-8");
 						InputStreamReader ir = new InputStreamReader(new FileInputStream(e.getValue()),"utf-8");
 						ps.setCharacterStream(1, ir, (int)e.getValue().length());
-						ps.executeUpdate();
+						int rowsUpdated = ps.executeUpdate();
+						System.out.println(rowsUpdated + "  " + s.toString());
 						ir.close();
 					}
 				}
