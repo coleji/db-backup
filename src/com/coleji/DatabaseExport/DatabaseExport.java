@@ -111,7 +111,7 @@ public class DatabaseExport {
 		File f;
 		BufferedWriter bw;
 		QueryWrapper qw = new QueryWrapper();
-		qw.add("select * from " + table);
+		qw.add("select * from " + table + " order by 1");
 		ResultSet rs = qw.runQueryAndGetResultSet(c);
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int columnCount = rsmd.getColumnCount();
@@ -214,10 +214,10 @@ public class DatabaseExport {
 	
 	public static void main(String[] args) {
 		try {
-			String writeToDirectory = "/home/jcole/export-test/first";
+			String writeToDirectory = "/home/jcole/export-test/second";
 			Connection c = new OracleConnectionManager("/home/jcole/property-files/CBI_QA").getConnection();
-			/*
-			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_DEV", null, new String[] {"TABLE"});
+			
+			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_QA", null, new String[] {"TABLE"});
 			ArrayList<String> tables = new ArrayList<String>();
 			while (tablesRS.next()) {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
@@ -227,8 +227,8 @@ public class DatabaseExport {
 			//	System.out.println("TABLE: " + table);
 				exportLiveToFile(writeToDirectory, c, table);
 			}
-*/
-			loadFilesToDatabase(writeToDirectory, c);
+
+		//	loadFilesToDatabase(writeToDirectory, c);
 			
 			c.close();
 		} catch (Exception e) {

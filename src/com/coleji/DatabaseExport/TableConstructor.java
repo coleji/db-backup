@@ -212,7 +212,7 @@ public class TableConstructor {
 						String value = values[i];
 						Column col = this.columns.get(dataFileColIndexToObjectColumnIndex.get(i));
 						if (value == null || value.equals("")) {
-							s.append(delimiter + col.columnName + " = null");
+							s.append(delimiter + col.columnName + " is null");
 						} else {
 							switch(col.columnType) {
 							case DatabaseExport.COLUMN_TYPE_ORACLE_VARCHAR2:
