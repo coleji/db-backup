@@ -8,5 +8,10 @@
 	<classpathentry kind="lib" path="commons-io-2.4/commons-io-2.4-test-sources.jar"/>
 	<classpathentry kind="lib" path="commons-io-2.4/commons-io-2.4-tests.jar"/>
 	<classpathentry kind="lib" path="commons-io-2.4/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="commons-compress-1.10/commons-compress-1.10-javadoc.jar"/>
+	<classpathentry kind="lib" path="commons-compress-1.10/commons-compress-1.10-sources.jar"/>
+	<classpathentry kind="lib" path="commons-compress-1.10/commons-compress-1.10-test-sources.jar"/>
+	<classpathentry kind="lib" path="commons-compress-1.10/commons-compress-1.10-tests.jar"/>
+	<classpathentry kind="lib" path="commons-compress-1.10/commons-compress-1.10.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

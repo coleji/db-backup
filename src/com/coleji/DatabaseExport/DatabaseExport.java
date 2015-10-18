@@ -213,8 +213,11 @@ public class DatabaseExport {
 	}
 	
 	public static void main(String[] args) {
+		
+		
+		
 		try {
-			String writeToDirectory = "/home/jcole/export-test/second";
+			String writeToDirectory = "/home/jcole/export-test";
 			Connection c = new OracleConnectionManager("/home/jcole/property-files/CBI_QA").getConnection();
 			
 			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_QA", null, new String[] {"TABLE"});
