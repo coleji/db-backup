@@ -1,8 +1,11 @@
 package com.coleji.DatabaseExport;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.sql.Blob;
@@ -10,13 +13,18 @@ import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.IOUtils;
 
 import com.coleji.Database.OracleConnectionManager;
@@ -213,27 +221,52 @@ public class DatabaseExport {
 	}
 	
 	public static void main(String[] args) {
-		
-		
-		
 		try {
-			String writeToDirectory = "/home/jcole/export-test";
-			Connection c = new OracleConnectionManager("/home/jcole/property-files/CBI_QA").getConnection();
+			String baseDir = "/home/jcole/export-test";
+			String propsFilePath = "/home/jcole/property-files/CBI_QA";
+			
+			SimpleDateFormat sdf = new SimpleDateFormat("Y-M-d");
+			String dateString = sdf.format(new Date());
+			
+			String rawDirPath = baseDir + "/" + dateString;
+			File rawDir = new File(rawDirPath);
+			if (rawDir.exists()) throw new Exception();
+			rawDir.mkdir();
+			
+			Connection c = new OracleConnectionManager(propsFilePath).getConnection();
 			
 			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_QA", null, new String[] {"TABLE"});
 			ArrayList<String> tables = new ArrayList<String>();
 			while (tablesRS.next()) {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
 			}
+			tablesRS.close();
+			
 			for (String table : tables) {
 			//	if (!table.equals("EMAIL_CONTENT")) continue;
 			//	System.out.println("TABLE: " + table);
-				exportLiveToFile(writeToDirectory, c, table);
+				exportLiveToFile(rawDirPath, c, table);
 			}
+			
+			File tarFile = new File(baseDir + "/" + dateString + ".tar");
+			
+			if (!tarFile.exists()) tarFile.createNewFile();
+			TarArchiveOutputStream tOut = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(tarFile))));
+			for (File f : (new File(baseDir + "/" + dateString)).listFiles()) {
+				TarArchiveEntry tarEntry = new TarArchiveEntry(f, f.getName());
+				tOut.putArchiveEntry(tarEntry);
+				IOUtils.copy(new FileInputStream(f), tOut);
+				tOut.closeArchiveEntry();
+				f.delete();
+			}
+			tOut.finish();
+			rawDir.delete();
 
 		//	loadFilesToDatabase(writeToDirectory, c);
 			
 			c.close();
+			
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
