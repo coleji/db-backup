@@ -223,7 +223,7 @@ public class DatabaseExport {
 	public static void main(String[] args) {
 		try {
 			String baseDir = "/home/jcole/export-test";
-			String propsFilePath = "/home/jcole/property-files/CBI_QA";
+			String propsFilePath = "/home/jcole/property-files/CBI_PROD_RO";
 			
 			SimpleDateFormat sdf = new SimpleDateFormat("Y-M-d");
 			String dateString = sdf.format(new Date());
@@ -235,7 +235,7 @@ public class DatabaseExport {
 			
 			Connection c = new OracleConnectionManager(propsFilePath).getConnection();
 			
-			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_QA", null, new String[] {"TABLE"});
+			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_PROD", null, new String[] {"TABLE"});
 			ArrayList<String> tables = new ArrayList<String>();
 			while (tablesRS.next()) {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
