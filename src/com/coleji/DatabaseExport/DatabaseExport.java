@@ -29,6 +29,7 @@ import org.apache.commons.io.IOUtils;
 
 import com.coleji.Database.OracleConnectionManager;
 import com.coleji.Database.QueryWrapper;
+import com.coleji.Util.PropertiesWrapper;
 
 
 public class DatabaseExport {
@@ -222,8 +223,8 @@ public class DatabaseExport {
 	
 	public static void main(String[] args) {
 		try {
-			String baseDir = "/home/jcole/export-test";
-			String propsFilePath = "/home/jcole/property-files/CBI_PROD_RO";
+			String baseDir = args[0];
+			String propsFilePath = args[1];
 			
 			SimpleDateFormat sdf = new SimpleDateFormat("Y-M-d");
 			String dateString = sdf.format(new Date());
@@ -235,7 +236,9 @@ public class DatabaseExport {
 			
 			Connection c = new OracleConnectionManager(propsFilePath).getConnection();
 			
-			ResultSet tablesRS = c.getMetaData().getTables(null, "CBI_PROD", null, new String[] {"TABLE"});
+			PropertiesWrapper props = new PropertiesWrapper(propsFilePath, new String[] {"schema"});
+			
+			ResultSet tablesRS = c.getMetaData().getTables(null, props.getProperty("schema") , null, new String[] {"TABLE"});
 			ArrayList<String> tables = new ArrayList<String>();
 			while (tablesRS.next()) {
 				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
@@ -243,14 +246,13 @@ public class DatabaseExport {
 			tablesRS.close();
 			
 			for (String table : tables) {
-			//	if (!table.equals("EMAIL_CONTENT")) continue;
-			//	System.out.println("TABLE: " + table);
 				exportLiveToFile(rawDirPath, c, table);
 			}
 			
 			File tarFile = new File(baseDir + "/" + dateString + ".tar.gz");
 			
-			if (!tarFile.exists()) tarFile.createNewFile();
+			if (tarFile.exists()) throw new Exception(); 
+			tarFile.createNewFile();
 			TarArchiveOutputStream tOut = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(tarFile))));
 			for (File f : (new File(baseDir + "/" + dateString)).listFiles()) {
 				TarArchiveEntry tarEntry = new TarArchiveEntry(f, f.getName());
@@ -261,6 +263,7 @@ public class DatabaseExport {
 			}
 			tOut.finish();
 			rawDir.delete();
+			
 
 		//	loadFilesToDatabase(writeToDirectory, c);
 			
