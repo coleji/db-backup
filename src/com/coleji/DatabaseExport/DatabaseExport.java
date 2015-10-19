@@ -248,7 +248,7 @@ public class DatabaseExport {
 				exportLiveToFile(rawDirPath, c, table);
 			}
 			
-			File tarFile = new File(baseDir + "/" + dateString + ".tar");
+			File tarFile = new File(baseDir + "/" + dateString + ".tar.gz");
 			
 			if (!tarFile.exists()) tarFile.createNewFile();
 			TarArchiveOutputStream tOut = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(tarFile))));
