@@ -1,0 +1,34 @@
+<project name="util" default="compile" basedir=".">
+  <description>
+    simple example build file
+  </description>
+  <!-- set global properties for this build -->
+  <property name="src" location="src"/>
+  <property name="build" location="bin"/>
+
+  <target name="init">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build}"/>
+  </target>
+
+  <target name="compile" depends="init"
+        description="compile the source">
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}">
+	    <classpath>
+			<pathelement path="commons-compress-1.10.jar"/>
+	    	<pathelement path="commons-compress-1.10-javadoc.jar"/>
+			<pathelement path="commons-compress-1.10-sources.jar"/>
+			<pathelement path="commons-compress-1.10-tests.jar"/>
+			<pathelement path="commons-compress-1.10-test-sources.jar"/>
+			<pathelement path="commons-io-2.4.jar"/>
+			<pathelement path="commons-io-2.4-javadoc.jar"/>
+			<pathelement path="commons-io-2.4-sources.jar"/>
+			<pathelement path="commons-io-2.4-tests.jar"/>
+			<pathelement path="commons-io-2.4-test-sources.jar"/>
+	    </classpath>
+  	</javac>
+  </target>
+</project>
