@@ -27,6 +27,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.IOUtils;
 
+import com.coleji.Database.MysqlConnectionManager;
 import com.coleji.Database.OracleConnectionManager;
 import com.coleji.Database.QueryWrapper;
 import com.coleji.Util.PropertiesWrapper;
@@ -34,6 +35,9 @@ import com.coleji.Util.PropertiesWrapper;
 
 public class DatabaseExport {
 	private static final int TABLE_NAME_COLUMN = 3;
+
+	public static final Integer CONNECTION_TYPE_ORACLE = 1;
+	public static final Integer CONNECTION_TYPE_MYSQL = 2;
 	
 	protected static final char FIELD_DELIMITER = '\t';
 	protected static final char LINE_DELIMITER = '\n';
@@ -223,8 +227,9 @@ public class DatabaseExport {
 	
 	public static void main(String[] args) {
 		try {
-			String baseDir = args[0];
-			String propsFilePath = args[1];
+			Integer connectionType = new Integer(args[0]); 
+			String baseDir = args[1];
+			String propsFilePath = args[2];
 			
 			SimpleDateFormat sdf = new SimpleDateFormat("Y-M-d");
 			String dateString = sdf.format(new Date());
@@ -234,7 +239,14 @@ public class DatabaseExport {
 			if (rawDir.exists()) throw new Exception();
 			rawDir.mkdir();
 			
-			Connection c = new OracleConnectionManager(propsFilePath).getConnection();
+			Connection c = null;
+			if (connectionType == CONNECTION_TYPE_ORACLE) {
+				c = new OracleConnectionManager(propsFilePath).getConnection();
+			} else if (connectionType == CONNECTION_TYPE_MYSQL) {
+				c = new MysqlConnectionManager(propsFilePath).getConnection();
+			} else {
+				throw new Exception("Unknown connection type");
+			}
 			
 			PropertiesWrapper props = new PropertiesWrapper(propsFilePath, new String[] {"schema"});
 			
