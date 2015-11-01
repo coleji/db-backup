@@ -36,8 +36,8 @@ import com.coleji.Util.PropertiesWrapper;
 public class DatabaseExport {
 	private static final int TABLE_NAME_COLUMN = 3;
 
-	public static final Integer CONNECTION_TYPE_ORACLE = 1;
-	public static final Integer CONNECTION_TYPE_MYSQL = 2;
+	public static final int CONNECTION_TYPE_ORACLE = 1;
+	public static final int CONNECTION_TYPE_MYSQL = 2;
 	
 	protected static final char FIELD_DELIMITER = '\t';
 	protected static final char LINE_DELIMITER = '\n';
@@ -240,11 +240,14 @@ public class DatabaseExport {
 			rawDir.mkdir();
 			
 			Connection c = null;
-			if (connectionType == CONNECTION_TYPE_ORACLE) {
+			switch (connectionType) {
+			case CONNECTION_TYPE_ORACLE:
 				c = new OracleConnectionManager(propsFilePath).getConnection();
-			} else if (connectionType == CONNECTION_TYPE_MYSQL) {
+				break;
+			case CONNECTION_TYPE_MYSQL:
 				c = new MysqlConnectionManager(propsFilePath).getConnection();
-			} else {
+				break;
+			default:
 				throw new Exception("Unknown connection type");
 			}
 			
