@@ -18,16 +18,16 @@
     <!-- Compile the java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}">
 	    <classpath>
-			<pathelement path="commons-compress-1.10/commons-compress-1.10.jar"/>
-	    	<pathelement path="commons-compress-1.10/commons-compress-1.10-javadoc.jar"/>
-			<pathelement path="commons-compress-1.10/commons-compress-1.10-sources.jar"/>
-			<pathelement path="commons-compress-1.10/commons-compress-1.10-tests.jar"/>
-			<pathelement path="commons-compress-1.10/commons-compress-1.10-test-sources.jar"/>
-			<pathelement path="commons-io-2.4/commons-io-2.4.jar"/>
-			<pathelement path="commons-io-2.4/commons-io-2.4-javadoc.jar"/>
-			<pathelement path="commons-io-2.4/commons-io-2.4-sources.jar"/>
-			<pathelement path="commons-io-2.4/commons-io-2.4-tests.jar"/>
-			<pathelement path="commons-io-2.4/commons-io-2.4-test-sources.jar"/>
+			<pathelement path="commons-compress-1.13/commons-compress-1.13.jar"/>
+	    	<pathelement path="commons-compress-1.13/commons-compress-1.13-javadoc.jar"/>
+			<pathelement path="commons-compress-1.13/commons-compress-1.13-sources.jar"/>
+			<pathelement path="commons-compress-1.13/commons-compress-1.13-tests.jar"/>
+			<pathelement path="commons-compress-1.13/commons-compress-1.13-test-sources.jar"/>
+			<pathelement path="commons-io-2.5/commons-io-2.5.jar"/>
+			<pathelement path="commons-io-2.5/commons-io-2.5-javadoc.jar"/>
+			<pathelement path="commons-io-2.5/commons-io-2.5-sources.jar"/>
+			<pathelement path="commons-io-2.5/commons-io-2.5-tests.jar"/>
+			<pathelement path="commons-io-2.5/commons-io-2.5-test-sources.jar"/>
 	    </classpath>
   	</javac>
   </target>

@@ -1,11 +1,8 @@
 package com.coleji.DatabaseExport;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.sql.Blob;
@@ -22,18 +19,20 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.IOUtils;
 
 import com.coleji.Database.MysqlConnectionManager;
 import com.coleji.Database.OracleConnectionManager;
 import com.coleji.Database.QueryWrapper;
+import com.coleji.Shell.ShellManager;
 import com.coleji.Util.PropertiesWrapper;
 
 
 public class DatabaseExport {
+	private static final boolean CLEANUP_UNZIPPED = true;
+	private static final boolean GET_RAW_FROM_DB = true;
+	
+	
 	private static final int TABLE_NAME_COLUMN = 3;
 
 	public static final int CONNECTION_TYPE_ORACLE = 1;
@@ -78,6 +77,7 @@ public class DatabaseExport {
 		// can't be instantiated
 	}
 	
+	@SuppressWarnings("unused")
 	private static void loadFilesToDatabase(String directory, Connection c) throws Exception {
 		HashMap<String, TableConstructor> tablesHash = new HashMap<String, TableConstructor>();
 		File directoryFile = new File(directory);
@@ -235,54 +235,48 @@ public class DatabaseExport {
 			String dateString = sdf.format(new Date());
 			
 			String rawDirPath = baseDir + "/" + dateString;
-			File rawDir = new File(rawDirPath);
-			if (rawDir.exists()) throw new Exception();
-			rawDir.mkdir();
 			
+			File rawDir;
 			Connection c = null;
-			switch (connectionType) {
-			case CONNECTION_TYPE_ORACLE:
-				c = new OracleConnectionManager(propsFilePath).getConnection();
-				break;
-			case CONNECTION_TYPE_MYSQL:
-				c = new MysqlConnectionManager(propsFilePath).getConnection();
-				break;
-			default:
-				throw new Exception("Unknown connection type");
+			
+			if (GET_RAW_FROM_DB) {
+				rawDir = new File(rawDirPath);
+				if (rawDir.exists()) throw new Exception();
+				rawDir.mkdir();
+				switch (connectionType) {
+				case CONNECTION_TYPE_ORACLE:
+					c = new OracleConnectionManager(propsFilePath).getConnection();
+					break;
+				case CONNECTION_TYPE_MYSQL:
+					c = new MysqlConnectionManager(propsFilePath).getConnection();
+					break;
+				default:
+					throw new Exception("Unknown connection type");
+				}
+				
+				PropertiesWrapper props = new PropertiesWrapper(propsFilePath, new String[] {"schema"});
+				
+				ResultSet tablesRS = c.getMetaData().getTables(null, props.getProperty("schema") , null, new String[] {"TABLE"});
+				ArrayList<String> tables = new ArrayList<String>();
+				while (tablesRS.next()) {
+					tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
+				}
+				tablesRS.close();
+				
+				for (String table : tables) {
+					exportLiveToFile(rawDirPath, c, table);
+				}
 			}
 			
-			PropertiesWrapper props = new PropertiesWrapper(propsFilePath, new String[] {"schema"});
-			
-			ResultSet tablesRS = c.getMetaData().getTables(null, props.getProperty("schema") , null, new String[] {"TABLE"});
-			ArrayList<String> tables = new ArrayList<String>();
-			while (tablesRS.next()) {
-				tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
-			}
-			tablesRS.close();
-			
-			for (String table : tables) {
-				exportLiveToFile(rawDirPath, c, table);
-			}
-			
-			File tarFile = new File(baseDir + "/" + dateString + ".tar.gz");
-			
-			if (tarFile.exists()) throw new Exception(); 
-			tarFile.createNewFile();
-			TarArchiveOutputStream tOut = new TarArchiveOutputStream(new GzipCompressorOutputStream(new BufferedOutputStream(new FileOutputStream(tarFile))));
-			for (File f : (new File(baseDir + "/" + dateString)).listFiles()) {
-				TarArchiveEntry tarEntry = new TarArchiveEntry(f, f.getName());
-				tOut.putArchiveEntry(tarEntry);
-				IOUtils.copy(new FileInputStream(f), tOut);
-				tOut.closeArchiveEntry();
-				f.delete();
-			}
-			tOut.finish();
-			rawDir.delete();
+			String command = "tar -czf " + baseDir + "/" + dateString + ".tar.gz " + baseDir + "/" + dateString;
+			ShellManager.getInstance().execute(command, null, 200000, 200000, "");
+
+			if (CLEANUP_UNZIPPED && GET_RAW_FROM_DB) rawDir.delete();
 			
 
 		//	loadFilesToDatabase(writeToDirectory, c);
 			
-			c.close();
+			if (GET_RAW_FROM_DB) c.close();
 			
 			
 		} catch (Exception e) {
