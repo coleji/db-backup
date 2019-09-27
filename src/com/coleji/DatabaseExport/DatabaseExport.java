@@ -121,6 +121,7 @@ public class DatabaseExport {
 	}
 	
 	private static void exportLiveToFile(String directory, Connection c, String table) throws Exception {
+		System.out.println("Starting table " + table);
 		File f;
 		BufferedWriter bw;
 		QueryWrapper qw = new QueryWrapper();
@@ -264,7 +265,9 @@ public class DatabaseExport {
 				tablesRS.close();
 				
 				for (String table : tables) {
-					exportLiveToFile(rawDirPath, c, table);
+					if (!table.equals("HTMLDB_PLAN_TABLE")) {
+						exportLiveToFile(rawDirPath, c, table);
+					}
 				}
 			}
 			
