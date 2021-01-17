@@ -232,7 +232,7 @@ public class DatabaseExport {
 			String baseDir = args[1];
 			String propsFilePath = args[2];
 			
-			SimpleDateFormat sdf = new SimpleDateFormat("Y-M-d");
+			SimpleDateFormat sdf = new SimpleDateFormat("y-M-d");
 			String dateString = sdf.format(new Date());
 			
 			String rawDirPath = baseDir + "/" + dateString;
