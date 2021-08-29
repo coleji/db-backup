@@ -232,7 +232,7 @@ public class DatabaseExport {
 			String baseDir = args[1];
 			String propsFilePath = args[2];
 			
-			SimpleDateFormat sdf = new SimpleDateFormat("Y-M-d");
+			SimpleDateFormat sdf = new SimpleDateFormat("y-M-d");
 			String dateString = sdf.format(new Date());
 			
 			String rawDirPath = baseDir + "/" + dateString;
@@ -258,15 +258,17 @@ public class DatabaseExport {
 				c.close();
 				
 				for (String table : tables) {
-					withConnection(connectionType, propsFilePath, cc -> {
-						System.out.println("Starting table " + table);
-						try {
-							exportLiveToFile(rawDirPath, cc, table);
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-						return null;
-					});
+					if (!table.equals("HTMLDB_PLAN_TABLE")) {
+						withConnection(connectionType, propsFilePath, cc -> {
+							System.out.println("Starting table " + table);
+							try {
+								exportLiveToFile(rawDirPath, cc, table);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+							return null;
+						});
+					}
 				}
 			}
 			
