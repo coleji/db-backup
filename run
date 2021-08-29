@@ -1,0 +1,1 @@
+java -cp ./target/db-backup-jar-with-dependencies.jar com.coleji.DatabaseExport.DatabaseExport 1 ./output ./credentials-dev
