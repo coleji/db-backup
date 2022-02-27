@@ -5,11 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -249,10 +245,11 @@ public class DatabaseExport {
 				PropertiesWrapper props = new PropertiesWrapper(propsFilePath, new String[] {"schema"});
 
 				Connection c = getConnection(connectionType, propsFilePath);
-				ResultSet tablesRS = c.getMetaData().getTables(null, props.getProperty("schema") , null, new String[] {"TABLE"});
+				PreparedStatement s = c.prepareStatement("select table_name from user_tables");
+				ResultSet tablesRS = s.executeQuery();
 				ArrayList<String> tables = new ArrayList<String>();
 				while (tablesRS.next()) {
-					tables.add(tablesRS.getString(TABLE_NAME_COLUMN));
+					tables.add(tablesRS.getString(1));
 				}
 				tablesRS.close();
 				c.close();
