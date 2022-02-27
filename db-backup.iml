@@ -9,7 +9,7 @@
     </content>
     <orderEntry type="jdk" jdkName="11" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Maven: commons-io:commons-io:2.5" level="project" />
+    <orderEntry type="library" name="Maven: commons-io:commons-io:2.7" level="project" />
     <orderEntry type="library" name="Maven: mysql:mysql-connector-java:8.0.26" level="project" />
     <orderEntry type="library" name="Maven: com.coleji:artifact-ojdbc:1.0" level="project" />
     <orderEntry type="library" name="Maven: com.coleji:artifact-java-utils:1.0" level="project" />
